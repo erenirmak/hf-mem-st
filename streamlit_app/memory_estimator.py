@@ -18,9 +18,7 @@ REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", 10.0))
 MAX_CONCURRENCY = int(os.getenv("MAX_WORKERS", min(32, (os.cpu_count() or 1) + 4)))
 
 
-async def get_json_file(
-    client: httpx.AsyncClient, url: str, headers: Optional[Dict[str, str]] = None
-) -> Any:
+async def get_json_file(client: httpx.AsyncClient, url: str, headers: Optional[Dict[str, str]] = None) -> Any:
     """Fetch a JSON file from URL."""
     response = await client.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
@@ -67,23 +65,21 @@ def _format_number(n: int) -> str:
     return f"{n:.1f}P"
 
 
-def calculate_memory_requirements_transformers(
-    metadata: Dict[str, Any]
-) -> Dict[str, Any]:
+def calculate_memory_requirements_transformers(metadata: Dict[str, Any]) -> Dict[str, Any]:
     """
     Calculate memory requirements for transformer models from safetensors metadata.
-    
+
     Returns a dict with:
     - total_gb: Total memory in GB
     - total_params: Total parameters
     - breakdown: Dict of dtype -> (params, bytes, gb)
     """
     ppdt: Dict[str, Tuple[int, int]] = {}
-    
+
     for key, value in metadata.items():
         if key in {"__metadata__"}:
             continue
-        
+
         if value["dtype"] not in ppdt:
             ppdt[value["dtype"]] = (0, 0)
 
@@ -132,12 +128,10 @@ def calculate_memory_requirements_transformers(
     }
 
 
-async def estimate_model_memory(
-    model_id: str, revision: str = "main"
-) -> Dict[str, Any]:
+async def estimate_model_memory(model_id: str, revision: str = "main") -> Dict[str, Any]:
     """
     Estimate memory requirements for a HuggingFace model.
-    
+
     Returns a dict with memory breakdown by dtype.
     """
     headers = {}
@@ -159,20 +153,16 @@ async def estimate_model_memory(
         files = await get_json_file(client=client, url=url, headers=headers)
 
         file_paths = [
-            f["path"]
-            for f in files
-            if f.get("path", None) is not None and f.get("type", None) == "file"
+            f["path"] for f in files if f.get("path", None) is not None and f.get("type", None) == "file"
         ]
 
         if "model.safetensors" in file_paths:
             url = f"https://huggingface.co/{model_id}/resolve/{revision}/model.safetensors"
-            metadata = await fetch_safetensors_metadata(
-                client=client, url=url, headers=headers
-            )
+            metadata = await fetch_safetensors_metadata(client=client, url=url, headers=headers)
             result = calculate_memory_requirements_transformers(metadata)
             result["model_type"] = "transformer"
             return result
-            
+
         elif "model.safetensors.index.json" in file_paths:
             url = f"https://huggingface.co/{model_id}/resolve/{revision}/model.safetensors.index.json"
             files_index = await get_json_file(client=client, url=url, headers=headers)
@@ -186,20 +176,16 @@ async def estimate_model_memory(
 
             async def fetch_semaphore(url: str) -> Dict[str, Any]:
                 async with semaphore:
-                    return await fetch_safetensors_metadata(
-                        client=client, url=url, headers=headers
-                    )
+                    return await fetch_safetensors_metadata(client=client, url=url, headers=headers)
 
             tasks = [asyncio.create_task(fetch_semaphore(url)) for url in urls]
-            metadata_list: List[Dict[str, Any]] = await asyncio.gather(
-                *tasks, return_exceptions=False
-            )
+            metadata_list: List[Dict[str, Any]] = await asyncio.gather(*tasks, return_exceptions=False)
 
             metadata = reduce(lambda acc, metadata: acc | metadata, metadata_list, {})
             result = calculate_memory_requirements_transformers(metadata)
             result["model_type"] = "transformer_sharded"
             return result
-        
+
         else:
             return {
                 "error": "Model format not supported. Only transformer and diffuser models are currently supported."
@@ -216,18 +202,18 @@ async def search_huggingface_models(query: str, limit: int = 10) -> List[str]:
     headers = {}
     if token := os.getenv("HF_TOKEN", None):
         headers["Authorization"] = f"Bearer {token}"
-    
+
     client = httpx.AsyncClient(timeout=httpx.Timeout(REQUEST_TIMEOUT), http2=True)
-    
+
     try:
         # Search using HuggingFace API
         url = f"https://huggingface.co/api/models?search={query}&limit={limit}&sort=downloads&direction=-1"
         response = await client.get(url, headers=headers)
         response.raise_for_status()
-        
+
         models = response.json()
         if isinstance(models, list):
-            return [model.get('id', '') for model in models if model.get('id')]
+            return [model.get("id", "") for model in models if model.get("id")]
         return []
     except Exception as e:
         print(f"Error searching models: {e}")

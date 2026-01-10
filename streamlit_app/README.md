@@ -20,14 +20,14 @@ streamlit run app.py
 The app will start at the default Streamlit URL (typically <http://localhost:8501>).
 
 ## Usage Flow 🚦
-1) Set the number of models to compare in the sidebar.  
-2) Enter model IDs (or pick from suggestions) and expand “Memory Requirements” to fetch estimates.  
-3) Switch chart type/color and toggle metadata as needed.  
-4) Use “Compare Models” to populate comparison data and charts.  
-5) Manage cached entries via the Cache Management expander; delete individual models or clear all.  
-6) Export results in your preferred format from the Export section.  
+1) Set the number of models to compare in the sidebar.
+2) Enter model IDs (or pick from suggestions) and expand “Memory Requirements” to fetch estimates.
+3) Switch chart type/color and toggle metadata as needed.
+4) Use “Compare Models” to populate comparison data and charts.
+5) Manage cached entries via the Cache Management expander; delete individual models or clear all.
+6) Export results in your preferred format from the Export section.
 
 ## Notes 📝
-- The UI relies on the local estimator (`memory_estimator.py`) which wraps `estimate_model_memory` and caching helpers.  
-- Cached results live in `st.session_state` and are cleared via the UI controls.  
-- Requirements are isolated in `streamlit_app/requirements.txt` to keep the upstream project metadata untouched.  
+- The UI relies on the local estimator (`memory_estimator.py`) which wraps `estimate_model_memory` and caching helpers.
+- Cached results live in `st.session_state` and are cleared via the UI controls.
+- Requirements are isolated in `streamlit_app/requirements.txt` to keep the upstream project metadata untouched.
